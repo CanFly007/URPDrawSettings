@@ -1,92 +1,82 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class FindPlayerManager : MonoBehaviour
 {
-    public Camera camera;
+    public Camera detectionCamera;
 
-    private readonly int m_propIdColor = Shader.PropertyToID("_FindColor");
-    private Color playerColor = new Color(1, 0, 0, 1);
-    private  Color otherColor = new Color(0, 0, 0, 1);
+    private static readonly int PropIdColor = Shader.PropertyToID("_FindColor");
+    private static readonly Color PlayerColor = new Color(1, 0, 0, 1);
+    private static readonly Color NonPlayerColor = new Color(0, 0, 0, 1);
 
-    void Sample()
+    private MaterialPropertyBlock propertyBlock;
+
+    private void Awake()
     {
-        int textureHeight = 256;
-        float cameraAspectRatio = camera.aspect;
-        int textureWidth = Mathf.RoundToInt(textureHeight * cameraAspectRatio);
-
-
-        RenderTexture rt = RenderTexture.GetTemporary(textureWidth, textureHeight, 32, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
-        camera.targetTexture = rt;
-        rt.filterMode = FilterMode.Point;
-        rt.Create();
-        RenderTexture.active = rt;
-
-        camera.clearFlags = CameraClearFlags.SolidColor;
-        camera.backgroundColor = Color.green;
-
-        var renderers = FindObjectsOfType<Renderer>();
-        for (int i = 0; i < renderers.Length; i++)
-        {
-            CreateBakingRenderer(renderers[i]);
-        }
-
-        camera.Render();
-
-        Texture2D readbackTexture = new Texture2D(textureWidth, textureHeight, TextureFormat.ARGB32, false);
-        readbackTexture.ReadPixels(new Rect(0, 0, textureWidth, textureHeight), 0, 0);
-        readbackTexture.Apply();
-        Color[] pixels = readbackTexture.GetPixels();
-        Object.Destroy(readbackTexture);
-        RenderTexture.active = null;
-        RenderTexture.ReleaseTemporary(rt);
-
-        int count = pixels.Length;
-        for (int i = 0; i < count; i++)
-        {
-            Color pixel = pixels[i];
-            if (pixel.r == 1 && pixel.g == 0 && pixel.b == 0 && pixel.a == 1)
-            {
-                Debug.Log("i see you");
-                break;
-            }
-        }
-
+        propertyBlock = new MaterialPropertyBlock();
     }
 
     private void Update()
     {
-        if(Input.GetKeyDown(KeyCode.Alpha1))
+        if (Input.GetKeyDown(KeyCode.Alpha1))
         {
-            //Setup();
-            Sample();
-
-
+            DetectPlayers();
         }
     }
 
-    void CreateBakingRenderer(Renderer renderer)
+    private void DetectPlayers()
     {
-        if (renderer.gameObject.layer == LayerMask.NameToLayer("Player"))
+        int textureHeight = 256;
+        int textureWidth = Mathf.RoundToInt(textureHeight * detectionCamera.aspect);
+        RenderTexture renderTexture = RenderTexture.GetTemporary(textureWidth, textureHeight, 32, RenderTextureFormat.ARGB32);
+
+        detectionCamera.targetTexture = renderTexture;
+        detectionCamera.clearFlags = CameraClearFlags.SolidColor;
+        detectionCamera.backgroundColor = NonPlayerColor;
+
+        Renderer[] renderers = FindObjectsOfType<Renderer>();
+        foreach (Renderer renderer in renderers)
         {
-            Material[] allMaterials = renderer.sharedMaterials;
-            for (int i = 0; i < allMaterials.Length; i++)
+            SetRendererColor(renderer, renderer.gameObject.layer == LayerMask.NameToLayer("Player") ? PlayerColor : NonPlayerColor);
+        }
+
+        detectionCamera.Render();
+
+        RenderTexture.active = renderTexture;
+        bool playerDetected = CheckForPlayerColor(textureWidth, textureHeight);
+
+        if (playerDetected)
+        {
+            Debug.Log("I see you");
+        }
+
+        RenderTexture.active = null;
+        RenderTexture.ReleaseTemporary(renderTexture);
+        detectionCamera.targetTexture = null;
+    }
+
+    private void SetRendererColor(Renderer renderer, Color color)
+    {
+        propertyBlock.SetColor(PropIdColor, color);
+        renderer.SetPropertyBlock(propertyBlock);
+    }
+
+    private bool CheckForPlayerColor(int width, int height)
+    {
+        Texture2D texture = new Texture2D(width, height, TextureFormat.RGBA32, false);
+        texture.ReadPixels(new Rect(0, 0, width, height), 0, 0);
+        texture.Apply();
+
+        Color[] pixels = texture.GetPixels();
+        foreach (var pixel in pixels)
+        {
+            if (pixel == PlayerColor)
             {
-                MaterialPropertyBlock mpb = new MaterialPropertyBlock();
-                mpb.SetColor(m_propIdColor, playerColor);
-                renderer.SetPropertyBlock(mpb, i);
+                Destroy(texture);
+                return true;
             }
         }
-        else
-        {
-            Material[] allMaterials = renderer.sharedMaterials;
-            for (int i = 0; i < allMaterials.Length; i++)
-            {
-                MaterialPropertyBlock mpb = new MaterialPropertyBlock();
-                mpb.SetColor(m_propIdColor, otherColor);
-                renderer.SetPropertyBlock(mpb, i);
-            }
-        }
+
+        Destroy(texture);
+        return false;
     }
 }
