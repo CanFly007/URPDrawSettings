@@ -29,8 +29,11 @@ namespace UnityEditor.Experimental.Rendering.Universal
 		    public static GUIContent overrideMaterial = new GUIContent("Material", "Choose an override material, every renderer will be rendered with this material.");
 		    public static GUIContent overrideMaterialPass = new GUIContent("Pass Index", "The pass index for the override material to use.");
 
-		    //Depth Settings
-		    public static GUIContent overrideDepth = new GUIContent("Depth", "Override depth rendering.");
+			public static GUIContent overrideShader = new GUIContent("Shader", "Choose an override material, every renderer will be rendered with this material.");
+
+
+			//Depth Settings
+			public static GUIContent overrideDepth = new GUIContent("Depth", "Override depth rendering.");
 		    public static GUIContent writeDepth = new GUIContent("Write Depth", "Choose to write depth to the screen.");
 		    public static GUIContent depthState = new GUIContent("Depth Test", "Choose a new depth test function.");
 
@@ -60,6 +63,9 @@ namespace UnityEditor.Experimental.Rendering.Universal
 	    //Render props
 	    private SerializedProperty m_OverrideMaterial;
 	    private SerializedProperty m_OverrideMaterialPass;
+
+		private SerializedProperty m_OverrideShader;
+
 	    //Depth props
 	    private SerializedProperty m_OverrideDepth;
 	    private SerializedProperty m_WriteDepth;
@@ -111,8 +117,11 @@ namespace UnityEditor.Experimental.Rendering.Universal
             m_OverrideMaterial = property.FindPropertyRelative("overrideMaterial");
             m_OverrideMaterialPass = property.FindPropertyRelative("overrideMaterialPassIndex");
 
-            //Depth props
-            m_OverrideDepth = property.FindPropertyRelative("overrideDepthState");
+			m_OverrideShader = property.FindPropertyRelative("overrideShader");
+
+
+			//Depth props
+			m_OverrideDepth = property.FindPropertyRelative("overrideDepthState");
             m_WriteDepth = property.FindPropertyRelative("enableWrite");
             m_DepthState = property.FindPropertyRelative("depthCompareFunction");
 
@@ -165,6 +174,10 @@ namespace UnityEditor.Experimental.Rendering.Universal
 				//Override material
 				DoMaterialOverride(ref rect);
 				rect.y += Styles.defaultLineSpace;
+
+				EditorGUI.PropertyField(rect, m_OverrideShader, Styles.overrideShader);
+				rect.y += Styles.defaultLineSpace;
+
 				//Override depth
 				DoDepthOverride(ref rect);
 				rect.y += Styles.defaultLineSpace;

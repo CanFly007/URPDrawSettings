@@ -16,6 +16,8 @@ namespace UnityEngine.Experimental.Rendering.Universal
         public Material overrideMaterial { get; set; }
         public int overrideMaterialPassIndex { get; set; }
 
+        public Shader overrideShader { get; set; }
+
         List<ShaderTagId> m_ShaderTagIdList = new List<ShaderTagId>();
 
         public void SetDetphState(bool writeEnabled, CompareFunction function = CompareFunction.Less)
@@ -50,6 +52,9 @@ namespace UnityEngine.Experimental.Rendering.Universal
             this.renderQueueType = renderQueueType;
             this.overrideMaterial = null;
             this.overrideMaterialPassIndex = 0;
+
+            this.overrideShader = null;
+
             RenderQueueRange renderQueueRange = (renderQueueType == RenderQueueType.Transparent)
                 ? RenderQueueRange.transparent
                 : RenderQueueRange.opaque;
@@ -88,6 +93,7 @@ namespace UnityEngine.Experimental.Rendering.Universal
             DrawingSettings drawingSettings = CreateDrawingSettings(m_ShaderTagIdList, ref renderingData, sortingCriteria);
             drawingSettings.overrideMaterial = overrideMaterial;
             drawingSettings.overrideMaterialPassIndex = overrideMaterialPassIndex;
+            drawingSettings.overrideShader = overrideShader;
 
             ref CameraData cameraData = ref renderingData.cameraData;
             Camera camera = cameraData.camera;

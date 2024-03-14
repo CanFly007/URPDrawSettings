@@ -25,6 +25,8 @@ namespace UnityEngine.Experimental.Rendering.Universal
             public Material overrideMaterial = null;
             public int overrideMaterialPassIndex = 0;
 
+            public Shader overrideShader = null;
+
             public bool overrideDepthState = false;
             public CompareFunction depthCompareFunction = CompareFunction.LessEqual;
             public bool enableWrite = true;
@@ -79,6 +81,8 @@ namespace UnityEngine.Experimental.Rendering.Universal
 
             renderObjectsPass.overrideMaterial = settings.overrideMaterial;
             renderObjectsPass.overrideMaterialPassIndex = settings.overrideMaterialPassIndex;
+
+            renderObjectsPass.overrideShader = settings.overrideShader;
 
             if (settings.overrideDepthState)
                 renderObjectsPass.SetDetphState(settings.enableWrite, settings.depthCompareFunction);
