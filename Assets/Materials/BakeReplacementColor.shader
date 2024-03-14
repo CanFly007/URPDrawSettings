@@ -3,7 +3,7 @@
 	Properties
 	{
 		[MainTexture] _BaseMap("Albedo", 2D) = "white" {}
-		[MainColor] _BaseColor("Color", Color) = (1,1,1,1)
+		[MainColor] _FindColor("Color", Color) = (1,1,1,1)
 
 		//[PerRendererData] _Color("Main Color", Color) = (1,1,1,1)
 		[Enum(UnityEngine.Rendering.CullMode)] _Cull ("Cull", Float) = 0
@@ -44,13 +44,13 @@
 				};
 
 				UNITY_INSTANCING_BUFFER_START(Props)
-				UNITY_DEFINE_INSTANCED_PROP(fixed4, _BaseColor)
+					UNITY_DEFINE_INSTANCED_PROP(fixed4, _FindColor)
 				UNITY_INSTANCING_BUFFER_END(Props)
 
 				Texture2D _BaseMap;
 				SamplerState sampler_BaseMap;
 				float4 _BaseMap_ST;
-				//float4 _BaseColor
+				//float4 _FindColor
 
 				v2f vert(a2v v)
 				{
@@ -72,11 +72,19 @@
 				float4 frag(v2f i) : COLOR
 				{
 					UNITY_SETUP_INSTANCE_ID(i);
-
-					fixed4 texColor = _BaseMap.Sample(sampler_BaseMap, i.uv);
-					fixed4 col = texColor * UNITY_ACCESS_INSTANCED_PROP(_BaseColor_arr, _BaseColor) * fixed4(1,0,0,1);
-					//return float4(1, 0, 0, 1);
+					
+					float4 col = UNITY_ACCESS_INSTANCED_PROP(Props, _FindColor);
 					return col;
+
+
+
+
+					//fixed4 texColor = _BaseMap.Sample(sampler_BaseMap, i.uv);
+					//fixed4 col = texColor * UNITY_ACCESS_INSTANCED_PROP(Props, _FindColor) * fixed4(1,0,0,1);
+					////return float4(1, 0, 0, 1);
+					//return col;
+
+					
 
 
 					//if (col.a >= 0.5)
