@@ -5,26 +5,19 @@ using UnityEngine;
 public class FindPlayerManager : MonoBehaviour
 {
     public Camera camera;
-    private RenderTexture outputRT;
 
     private readonly int m_propIdColor = Shader.PropertyToID("_FindColor");
-    private Color32 playerColor = new Color32((byte)255, 0, 0, 1);
-    private  Color32 otherColor = new Color32(0, 0, 0, 1);
-
-    void Setup()
-    {
-        camera.clearFlags = CameraClearFlags.SolidColor;
-        camera.backgroundColor = Color.black;
-
-        outputRT = new RenderTexture(256, 256, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
-        outputRT.autoGenerateMips = false;
-        outputRT.enableRandomWrite = true;
-        outputRT.Create();
-    }
+    private Color playerColor = new Color(1, 0, 0, 1);
+    private  Color otherColor = new Color(0, 0, 0, 1);
 
     void Sample()
     {
-        RenderTexture rt = RenderTexture.GetTemporary(256, 256, 32, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
+        int textureHeight = 256;
+        float cameraAspectRatio = camera.aspect;
+        int textureWidth = Mathf.RoundToInt(textureHeight * cameraAspectRatio);
+
+
+        RenderTexture rt = RenderTexture.GetTemporary(textureWidth, textureHeight, 32, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
         camera.targetTexture = rt;
         rt.filterMode = FilterMode.Point;
         rt.Create();
@@ -41,10 +34,10 @@ public class FindPlayerManager : MonoBehaviour
 
         camera.Render();
 
-        Texture2D readbackTexture = new Texture2D(256, 256, TextureFormat.ARGB32, false);
-        readbackTexture.ReadPixels(new Rect(0, 0, 256, 256), 0, 0);
+        Texture2D readbackTexture = new Texture2D(textureWidth, textureHeight, TextureFormat.ARGB32, false);
+        readbackTexture.ReadPixels(new Rect(0, 0, textureWidth, textureHeight), 0, 0);
         readbackTexture.Apply();
-        Color32[] pixels = readbackTexture.GetPixels32();
+        Color[] pixels = readbackTexture.GetPixels();
         Object.Destroy(readbackTexture);
         RenderTexture.active = null;
         RenderTexture.ReleaseTemporary(rt);
@@ -52,8 +45,8 @@ public class FindPlayerManager : MonoBehaviour
         int count = pixels.Length;
         for (int i = 0; i < count; i++)
         {
-            Color32 pixel = pixels[i];
-            if (pixel.r == 255 && pixel.g == 0 && pixel.b == 0 && pixel.a == 255)
+            Color pixel = pixels[i];
+            if (pixel.r == 1 && pixel.g == 0 && pixel.b == 0 && pixel.a == 1)
             {
                 Debug.Log("i see you");
                 break;
