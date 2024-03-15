@@ -9,12 +9,12 @@ public class Draggable : MonoBehaviour
 
     void Start()
     {
-        mainCamera = Camera.main; 
+        mainCamera = Camera.main;
     }
 
     void Update()
     {
-        if (Input.GetMouseButtonDown(0))
+        if (!isDragging && Input.GetMouseButtonDown(0))
         {
             Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
             RaycastHit hit;
@@ -23,11 +23,12 @@ public class Draggable : MonoBehaviour
 
             if (Physics.Raycast(ray, out hit, Mathf.Infinity, layerMask))
             {
-                if (hit.collider.gameObject.GetComponent<Draggable>() != null)
+                // Check if the hit object is this GameObject
+                if (hit.collider.gameObject == gameObject)
                 {
                     isDragging = true;
-                    zCoordinate = mainCamera.WorldToScreenPoint(hit.collider.gameObject.transform.position).z;
-                    offset = hit.collider.gameObject.transform.position - GetMouseWorldPos();
+                    zCoordinate = mainCamera.WorldToScreenPoint(transform.position).z;
+                    offset = transform.position - GetMouseWorldPos();
                 }
             }
         }
@@ -40,7 +41,6 @@ public class Draggable : MonoBehaviour
             }
             else if (Input.GetMouseButtonUp(0))
             {
-                // Drop the object
                 isDragging = false;
             }
         }
@@ -49,7 +49,7 @@ public class Draggable : MonoBehaviour
     private Vector3 GetMouseWorldPos()
     {
         Vector3 mousePoint = Input.mousePosition;
-        mousePoint.z = zCoordinate; 
+        mousePoint.z = zCoordinate;
         return mainCamera.ScreenToWorldPoint(mousePoint);
     }
 }
