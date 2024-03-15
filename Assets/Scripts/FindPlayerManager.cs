@@ -6,18 +6,13 @@ public class FindPlayerManager : MonoBehaviour
     public Camera detectionCamera;
 
     private static readonly int PropIdColor = Shader.PropertyToID("_FindColor");
-    private static readonly Color PlayerColor = new Color(1, 0, 0, 1);
-    private static readonly Color NonPlayerColor = new Color(0, 0, 0, 1);
-
     private MaterialPropertyBlock propertyBlock;
 
-    // 定义一组预设颜色
     Color[] presetColors = new Color[]
     {
-    new Color(1, 0, 1, 1), // 紫色
-    new Color(0, 1, 1, 1), // 青色
-    new Color(1, 1, 0, 1), // 黄色
-                           // ... 添加更多不常用的纯色
+    new Color(1, 0, 0, 1),
+    new Color(0, 1, 0, 1),
+    new Color(0, 0, 1, 1),
     };
 
 
@@ -29,17 +24,14 @@ public class FindPlayerManager : MonoBehaviour
     private void Update()
     {
         if (Input.GetKeyDown(KeyCode.Alpha1))
-        {
-            //DetectPlayers();
-
-
+        {            
             List<GameObject> players = new List<GameObject>();
             FindePlayers(players);
-            FindResult findResult;
-            bool findme = DetectPlayers(players, detectionCamera, out findResult);
-            if (findme)
+            FindResult result;
+            bool found = DetectPlayers(players, detectionCamera, out result);
+            if (found)
             {
-                Debug.Log("I see you: " + findResult.count);
+                Debug.Log("I see you: " + result.count);
             }
             else
             {
@@ -47,25 +39,6 @@ public class FindPlayerManager : MonoBehaviour
             }
         }
     }
-
-
-    //struct Result
-    //{
-
-    //    ScreenRatio[] players;
-    //    int count;
-
-    //}
-    //struct ScreenRatio
-    //{
-    //    GameObject
-    //        float
-    //}
-
-    //void Find(List<GameObject> plyaers, ref Camera camera, out Result)
-    //{
-
-    //}
 
     private static void FindePlayers(List<GameObject> players)
     {
@@ -81,14 +54,13 @@ public class FindPlayerManager : MonoBehaviour
         }
     }
 
-
-    struct FindResult
+    public struct FindResult
     {
         public FindPlayer[] findPlayers;
         public int count;
     }
 
-    struct FindPlayer
+    public struct FindPlayer
     {
         public GameObject playerGo;
         public float ratio;
@@ -108,7 +80,7 @@ public class FindPlayerManager : MonoBehaviour
 
         camera.targetTexture = renderTexture;
         camera.clearFlags = CameraClearFlags.SolidColor;
-        camera.backgroundColor = NonPlayerColor;
+        camera.backgroundColor = Color.black;
 
         Graphics.SetRenderTarget(renderTexture);
         GL.Clear(true, true, Color.black);
@@ -157,7 +129,6 @@ public class FindPlayerManager : MonoBehaviour
         //camera.targetTexture = null;
         Destroy(texture);
 
-        // Prepare the results
         List<FindPlayer> foundPlayers = new List<FindPlayer>();
         int texturePixels = textureWidth * textureHeight;
         foreach (var kvp in playerPixelCounts)
@@ -173,63 +144,5 @@ public class FindPlayerManager : MonoBehaviour
         findResult.count = foundPlayers.Count;
 
         return findResult.count > 0;
-    }
-
-
-    private void DetectPlayers()
-    {
-        int textureHeight = 256;
-        int textureWidth = Mathf.RoundToInt(textureHeight * detectionCamera.aspect);
-        RenderTexture renderTexture = RenderTexture.GetTemporary(textureWidth, textureHeight, 32, RenderTextureFormat.ARGB32);
-
-        detectionCamera.targetTexture = renderTexture;
-        detectionCamera.clearFlags = CameraClearFlags.SolidColor;
-        detectionCamera.backgroundColor = NonPlayerColor;
-
-        Renderer[] renderers = FindObjectsOfType<Renderer>();
-        foreach (Renderer renderer in renderers)
-        {
-            PaintDetectColor(renderer, renderer.gameObject.layer == LayerMask.NameToLayer("Player") ? PlayerColor : NonPlayerColor);
-        }
-
-        detectionCamera.Render();
-
-        RenderTexture.active = renderTexture;
-        bool playerDetected = CheckForPlayerColor(textureWidth, textureHeight);
-
-        if (playerDetected)
-        {
-            Debug.Log("I see you");
-        }
-
-        RenderTexture.active = null;
-        //RenderTexture.ReleaseTemporary(renderTexture);
-        //detectionCamera.targetTexture = null;
-    }
-
-    private void PaintDetectColor(Renderer renderer, Color color)
-    {
-        propertyBlock.SetColor(PropIdColor, color);
-        renderer.SetPropertyBlock(propertyBlock);
-    }
-
-    private bool CheckForPlayerColor(int width, int height)
-    {
-        Texture2D texture = new Texture2D(width, height, TextureFormat.RGBA32, false);
-        texture.ReadPixels(new Rect(0, 0, width, height), 0, 0);
-        texture.Apply();
-
-        Color[] pixels = texture.GetPixels();
-        foreach (var pixel in pixels)
-        {
-            if (pixel == PlayerColor)
-            {
-                Destroy(texture);
-                return true;
-            }
-        }
-
-        Destroy(texture);
-        return false;
     }
 }
