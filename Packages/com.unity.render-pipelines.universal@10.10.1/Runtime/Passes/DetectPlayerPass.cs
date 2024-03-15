@@ -5,11 +5,12 @@ using UnityEngine.Scripting.APIUpdating;
 
 namespace UnityEngine.Experimental.Rendering.Universal
 {
-    [MovedFrom("UnityEngine.Experimental.Rendering.LWRP")] public class RenderObjectsPass : ScriptableRenderPass
+    [MovedFrom("UnityEngine.Experimental.Rendering.LWRP")]
+    public class DetectPlayerPass : ScriptableRenderPass
     {
         RenderQueueType renderQueueType;
         FilteringSettings m_FilteringSettings;
-        RenderObjects.CustomCameraSettings m_CameraSettings;
+        DetectPlayerFeature.CustomCameraSettings m_CameraSettings;
         string m_ProfilerTag;
         ProfilingSampler m_ProfilingSampler;
 
@@ -42,9 +43,9 @@ namespace UnityEngine.Experimental.Rendering.Universal
 
         RenderStateBlock m_RenderStateBlock;
 
-        public RenderObjectsPass(string profilerTag, RenderPassEvent renderPassEvent, string[] shaderTags, RenderQueueType renderQueueType, int layerMask, RenderObjects.CustomCameraSettings cameraSettings)
+        public DetectPlayerPass(string profilerTag, RenderPassEvent renderPassEvent, string[] shaderTags, RenderQueueType renderQueueType, int layerMask, DetectPlayerFeature.CustomCameraSettings cameraSettings)
         {
-            base.profilingSampler = new ProfilingSampler(nameof(RenderObjectsPass));
+            base.profilingSampler = new ProfilingSampler(nameof(DetectPlayerPass));
 
             m_ProfilerTag = profilerTag;
             m_ProfilingSampler = new ProfilingSampler(profilerTag);
@@ -78,7 +79,7 @@ namespace UnityEngine.Experimental.Rendering.Universal
 
         }
 
-        internal RenderObjectsPass(URPProfileId profileId, RenderPassEvent renderPassEvent, string[] shaderTags, RenderQueueType renderQueueType, int layerMask, RenderObjects.CustomCameraSettings cameraSettings)
+        internal DetectPlayerPass(URPProfileId profileId, RenderPassEvent renderPassEvent, string[] shaderTags, RenderQueueType renderQueueType, int layerMask, DetectPlayerFeature.CustomCameraSettings cameraSettings)
         : this(profileId.GetType().Name, renderPassEvent, shaderTags, renderQueueType, layerMask, cameraSettings)
         {
             m_ProfilingSampler = ProfilingSampler.Get(profileId);
@@ -100,7 +101,7 @@ namespace UnityEngine.Experimental.Rendering.Universal
 
             // In case of camera stacking we need to take the viewport rect from base camera
             Rect pixelRect = renderingData.cameraData.pixelRect;
-            float cameraAspect = (float) pixelRect.width / (float) pixelRect.height;
+            float cameraAspect = (float)pixelRect.width / (float)pixelRect.height;
 
             // NOTE: Do NOT mix ProfilingScope with named CommandBuffers i.e. CommandBufferPool.Get("name").
             // Currently there's an issue which results in mismatched markers.
@@ -111,7 +112,7 @@ namespace UnityEngine.Experimental.Rendering.Universal
                 {
                     if (cameraData.xr.enabled)
                     {
-                        Debug.LogWarning("RenderObjects pass is configured to override camera matrices. While rendering in stereo camera matrices cannot be overridden.");
+                        Debug.LogWarning("DetectPlayer pass is configured to override camera matrices. While rendering in stereo camera matrices cannot be overridden.");
                     }
                     else
                     {
@@ -143,3 +144,4 @@ namespace UnityEngine.Experimental.Rendering.Universal
         }
     }
 }
+

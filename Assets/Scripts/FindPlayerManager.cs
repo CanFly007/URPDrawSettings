@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 public class FindPlayerManager : MonoBehaviour
@@ -23,6 +24,49 @@ public class FindPlayerManager : MonoBehaviour
         }
     }
 
+
+    struct Result
+    {
+
+        ScreenRatio[] players;
+        int count;
+
+    }
+    struct ScreenRatio
+    {
+        GameObject
+            float
+    }
+
+    void Find(List<GameObject> plyaers, ref Camera camera, out Result)
+    {
+
+    }
+
+
+    struct FindResult
+    {
+        public FindPlayer[] findPlayers;
+        public int count;
+    }
+
+    struct FindPlayer
+    {
+        GameObject playerGo;
+        float ratio;
+    }
+
+    private bool DetectPlayers(List<GameObject> players, Camera camera, out FindResult findResult)
+    {
+        findResult.count = 0;
+        findResult.findPlayers = null;
+
+        
+
+        return false;
+    }
+
+
     private void DetectPlayers()
     {
         int textureHeight = 256;
@@ -36,7 +80,7 @@ public class FindPlayerManager : MonoBehaviour
         Renderer[] renderers = FindObjectsOfType<Renderer>();
         foreach (Renderer renderer in renderers)
         {
-            SetRendererColor(renderer, renderer.gameObject.layer == LayerMask.NameToLayer("Player") ? PlayerColor : NonPlayerColor);
+            PaintDetectColor(renderer, renderer.gameObject.layer == LayerMask.NameToLayer("Player") ? PlayerColor : NonPlayerColor);
         }
 
         detectionCamera.Render();
@@ -54,7 +98,7 @@ public class FindPlayerManager : MonoBehaviour
         detectionCamera.targetTexture = null;
     }
 
-    private void SetRendererColor(Renderer renderer, Color color)
+    private void PaintDetectColor(Renderer renderer, Color color)
     {
         propertyBlock.SetColor(PropIdColor, color);
         renderer.SetPropertyBlock(propertyBlock);

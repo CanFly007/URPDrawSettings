@@ -1,4 +1,4 @@
-﻿Shader "Custom/BakeReplacementColor" 
+﻿Shader "Custom/ReplacementColor" 
 {
 	Properties
 	{
@@ -72,17 +72,18 @@
 				float4 frag(v2f i) : COLOR
 				{
 					UNITY_SETUP_INSTANCE_ID(i);
-					
-					float4 col = UNITY_ACCESS_INSTANCED_PROP(Props, _FindColor);
-					return col;
 
 
-
-
-					//fixed4 texColor = _BaseMap.Sample(sampler_BaseMap, i.uv);
-					//fixed4 col = texColor * UNITY_ACCESS_INSTANCED_PROP(Props, _FindColor) * fixed4(1,0,0,1);
-					////return float4(1, 0, 0, 1);
+					//float4 col = UNITY_ACCESS_INSTANCED_PROP(Props, _FindColor);
 					//return col;
+
+
+
+
+					fixed4 texColor = _BaseMap.Sample(sampler_BaseMap, i.uv);
+					fixed4 col = texColor * UNITY_ACCESS_INSTANCED_PROP(Props, _FindColor) * fixed4(1,0,0,1);
+					//return float4(1, 0, 0, 1);
+					return col;
 
 					
 
