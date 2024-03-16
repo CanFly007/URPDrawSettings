@@ -3,22 +3,22 @@ using UnityEngine;
 
 public struct FindResult
 {
-    public FindPlayer[] findPlayers;
+    public FindPlayer[] foundPlayers;
     public int count;
 }
 
 public struct FindPlayer
 {
-    public GameObject playerGo;
+    public GameObject playerGameObject;
     public float ratio;
 }
 
 public static class FindPlayerManager
 {
-    private static readonly int PropIdColor = Shader.PropertyToID("_FindColor");
-    private static MaterialPropertyBlock propertyBlock = new MaterialPropertyBlock();
+    private static readonly int m_PropIdColor = Shader.PropertyToID("_FindColor");
+    private static MaterialPropertyBlock m_PropertyBlock = new MaterialPropertyBlock();
 
-    private static Color[] presetColors = new Color[]
+    private static Color[] m_PresetColors = new Color[]
     {
         new Color(1,0,0,1),
         new Color(0,1,0,1),
@@ -30,10 +30,11 @@ public static class FindPlayerManager
 
     public static bool DetectPlayers(List<GameObject> players, Camera camera, out FindResult findResult)
     {
-        if (players.Count > presetColors.Length)
+        if (players.Count > m_PresetColors.Length)
         {
-            Debug.LogError("没有足够的预设颜色为每个玩家分配！");
-            //return false; // 早期返回以避免错误
+            Debug.LogError("Not enough preset colors to assign to each player.");
+            findResult = default(FindResult);
+            return false;
         }
 
         int textureHeight = 256;
@@ -48,18 +49,16 @@ public static class FindPlayerManager
         GL.Clear(true, true, Color.black);
 
         Dictionary<Color, GameObject> colorToPlayerMap = new Dictionary<Color, GameObject>();
-        List<Color> detectionColors = new List<Color>();
         for (int i = 0; i < players.Count; i++)
         {
-            Color detectColor = presetColors[i];
-            detectionColors.Add(detectColor);
+            Color detectColor = m_PresetColors[i];
             colorToPlayerMap[detectColor] = players[i];
 
             Renderer[] renderers = players[i].GetComponentsInChildren<Renderer>();
             foreach (Renderer renderer in renderers)
             {
-                propertyBlock.SetColor(PropIdColor, detectColor);
-                renderer.SetPropertyBlock(propertyBlock);
+                m_PropertyBlock.SetColor(m_PropIdColor, detectColor);
+                renderer.SetPropertyBlock(m_PropertyBlock);
             }
         }
 
@@ -91,19 +90,19 @@ public static class FindPlayerManager
         camera.targetTexture = null;
         UnityEngine.Object.Destroy(texture);
 
-        List<FindPlayer> foundPlayers = new List<FindPlayer>();
-        int texturePixels = textureWidth * textureHeight;
+        List<FindPlayer> detectedPlayers = new List<FindPlayer>();
+        int totalPixels = textureWidth * textureHeight;
         foreach (var kvp in playerPixelCounts)
         {
-            float ratio = kvp.Value / (float)texturePixels;
-            if (ratio > 0)
+            float playerRatio = kvp.Value / (float)totalPixels;
+            if (playerRatio > 0)
             {
-                foundPlayers.Add(new FindPlayer { playerGo = kvp.Key, ratio = ratio });
+                detectedPlayers.Add(new FindPlayer { playerGameObject = kvp.Key, ratio = playerRatio });
             }
         }
 
-        findResult.findPlayers = foundPlayers.ToArray();
-        findResult.count = foundPlayers.Count;
+        findResult.foundPlayers = detectedPlayers.ToArray();
+        findResult.count = detectedPlayers.Count;
 
         return findResult.count > 0;
     }
