@@ -599,7 +599,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 7
+  m_RootOrder: 6
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1203003879
 GameObject:
@@ -819,7 +819,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 1326714321}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e5a1714fac1407e43881c8968bee5b95, type: 3}
+  m_Script: {fileID: 11500000, guid: ad297d267860c7b46957fb38c89f5508, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   detectionCamera: {fileID: 1785927360}
@@ -835,7 +835,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 6
+  m_RootOrder: 7
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1785927356
 GameObject:

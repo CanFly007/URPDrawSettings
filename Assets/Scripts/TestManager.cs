@@ -12,11 +12,11 @@ public class TestManager : MonoBehaviour
         {
             List<GameObject> players = new List<GameObject>();
             FindePlayers(players);
-            FindResult result;
-            bool found = FindPlayerManager.DetectPlayers(players, detectionCamera, out result);
+            VisionResult result;
+            bool found = MonsterVisionProcessor.TryDetectPlayers(players, detectionCamera, out result);
             if (found)
             {
-                Debug.Log("I see you: " + result.count);
+                Debug.Log("I see you: " + result.VisibleCount);
             }
             else
             {

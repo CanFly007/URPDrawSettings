@@ -1,109 +1,107 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public struct FindResult
+public struct VisionResult
 {
-    public FindPlayer[] foundPlayers;
-    public int count;
+    public VisiblePlayer[] VisiblePlayers;
+    public int VisibleCount;
 }
 
-public struct FindPlayer
+public struct VisiblePlayer
 {
-    public GameObject playerGameObject;
-    public float ratio;
+    public GameObject PlayerObject;
+    public float ScreenSpaceRatio;
 }
 
-public static class FindPlayerManager
+public static class MonsterVisionProcessor
 {
-    private static readonly int m_PropIdColor = Shader.PropertyToID("_FindColor");
-    private static MaterialPropertyBlock m_PropertyBlock = new MaterialPropertyBlock();
+    private static readonly int s_ShaderPropertyColor = Shader.PropertyToID("_FindColor");
+    private static MaterialPropertyBlock s_MaterialPropertyBlock = new MaterialPropertyBlock();
 
-    private static Color[] m_PresetColors = new Color[]
+    private static Color[] s_DetectionColors = new Color[]
     {
-        new Color(1,0,0,1),
-        new Color(0,1,0,1),
-        new Color(0,0,1,1),
-        new Color(1,1,0,1),
-        new Color(1,0,1,1),
-        new Color(0,1,1,1),
+        new Color(1, 0, 0, 1),
+        new Color(0, 1, 0, 1),
+        new Color(0, 0, 1, 1),
+        new Color(1, 1, 0, 1),
+        new Color(1, 0, 1, 1),
+        new Color(0, 1, 1, 1),
     };
 
-    public static bool DetectPlayers(List<GameObject> players, Camera camera, out FindResult findResult)
+    public static bool TryDetectPlayers(List<GameObject> players, Camera monsterCamera, out VisionResult visionResult)
     {
-        if (players.Count > m_PresetColors.Length)
+        if (players.Count > s_DetectionColors.Length)
         {
-            Debug.LogError("Not enough preset colors to assign to each player.");
-            findResult = default(FindResult);
+            Debug.LogError("Insufficient detection colors for the number of players.");
+            visionResult = new VisionResult();
             return false;
         }
 
-        int textureHeight = 256;
-        int textureWidth = Mathf.RoundToInt(textureHeight * camera.aspect);
-        RenderTexture renderTexture = RenderTexture.GetTemporary(textureWidth, textureHeight, 32, RenderTextureFormat.ARGB32);
+        int rtHeight = 256;
+        int rtWidth = Mathf.RoundToInt(rtHeight * monsterCamera.aspect);
+        RenderTexture renderTexture = RenderTexture.GetTemporary(rtWidth, rtHeight, 32, RenderTextureFormat.ARGB32);
 
-        camera.targetTexture = renderTexture;
-        camera.clearFlags = CameraClearFlags.SolidColor;
-        camera.backgroundColor = Color.black;
+        monsterCamera.targetTexture = renderTexture;
+        monsterCamera.clearFlags = CameraClearFlags.SolidColor;
+        monsterCamera.backgroundColor = Color.black;
 
         Graphics.SetRenderTarget(renderTexture);
         GL.Clear(true, true, Color.black);
 
-        Dictionary<Color, GameObject> colorToPlayerMap = new Dictionary<Color, GameObject>();
-        for (int i = 0; i < players.Count; i++)
+        Dictionary<Color, GameObject> colorPlayerMap = new Dictionary<Color, GameObject>();
+        for (int i = 0; i < players.Count; ++i)
         {
-            Color detectColor = m_PresetColors[i];
-            colorToPlayerMap[detectColor] = players[i];
+            Color detectionColor = s_DetectionColors[i];
+            colorPlayerMap[detectionColor] = players[i];
 
-            Renderer[] renderers = players[i].GetComponentsInChildren<Renderer>();
-            foreach (Renderer renderer in renderers)
+            Renderer[] playerRenderers = players[i].GetComponentsInChildren<Renderer>();
+            foreach (Renderer renderer in playerRenderers)
             {
-                m_PropertyBlock.SetColor(m_PropIdColor, detectColor);
-                renderer.SetPropertyBlock(m_PropertyBlock);
+                s_MaterialPropertyBlock.SetColor(s_ShaderPropertyColor, detectionColor);
+                renderer.SetPropertyBlock(s_MaterialPropertyBlock);
             }
         }
 
-        camera.Render();
+        monsterCamera.Render();
 
         RenderTexture.active = renderTexture;
-        Texture2D texture = new Texture2D(textureWidth, textureHeight, TextureFormat.RGBA32, false);
-        texture.ReadPixels(new Rect(0, 0, textureWidth, textureHeight), 0, 0);
+        Texture2D texture = new Texture2D(rtWidth, rtHeight, TextureFormat.RGBA32, false);
+        texture.ReadPixels(new Rect(0, 0, rtWidth, rtHeight), 0, 0);
         texture.Apply();
 
-        Dictionary<GameObject, int> playerPixelCounts = new Dictionary<GameObject, int>();
+        var playerPixelCounts = new Dictionary<GameObject, int>();
         Color[] pixels = texture.GetPixels();
-
         foreach (Color pixel in pixels)
         {
-            if (colorToPlayerMap.ContainsKey(pixel))
+            if (colorPlayerMap.ContainsKey(pixel))
             {
-                if (!playerPixelCounts.ContainsKey(colorToPlayerMap[pixel]))
+                if (!playerPixelCounts.ContainsKey(colorPlayerMap[pixel]))
                 {
-                    playerPixelCounts[colorToPlayerMap[pixel]] = 0;
+                    playerPixelCounts[colorPlayerMap[pixel]] = 0;
                 }
-                playerPixelCounts[colorToPlayerMap[pixel]]++;
+                playerPixelCounts[colorPlayerMap[pixel]]++;
             }
         }
 
-        // Clean up
-        RenderTexture.active = null;
-        RenderTexture.ReleaseTemporary(renderTexture);
-        camera.targetTexture = null;
         UnityEngine.Object.Destroy(texture);
+        //RenderTexture.ReleaseTemporary(renderTexture);
+        //monsterCamera.targetTexture = null;
 
-        List<FindPlayer> detectedPlayers = new List<FindPlayer>();
-        int totalPixels = textureWidth * textureHeight;
+        var visiblePlayers = new List<VisiblePlayer>();
+        int totalPixels = rtWidth * rtWidth;
         foreach (var kvp in playerPixelCounts)
         {
-            float playerRatio = kvp.Value / (float)totalPixels;
-            if (playerRatio > 0)
+            float ratio = kvp.Value / (float)totalPixels;
+            if (ratio > 0)
             {
-                detectedPlayers.Add(new FindPlayer { playerGameObject = kvp.Key, ratio = playerRatio });
+                visiblePlayers.Add(new VisiblePlayer { PlayerObject = kvp.Key, ScreenSpaceRatio = ratio });
             }
         }
 
-        findResult.foundPlayers = detectedPlayers.ToArray();
-        findResult.count = detectedPlayers.Count;
+        visionResult.VisiblePlayers = visiblePlayers.ToArray();
+        visionResult.VisibleCount = visiblePlayers.Count;
 
-        return findResult.count > 0;
+
+        return visionResult.VisibleCount > 0;
     }
 }
