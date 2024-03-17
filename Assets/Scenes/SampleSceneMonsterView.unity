@@ -823,6 +823,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   detectionCamera: {fileID: 1785927360}
+  computeShader: {fileID: 7200000, guid: a06764770a016854aad25e126bcbe9c1, type: 3}
 --- !u!4 &1326714323
 Transform:
   m_ObjectHideFlags: 0

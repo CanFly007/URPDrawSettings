@@ -6,10 +6,14 @@ public class TestManager : MonoBehaviour
 {
     public Camera detectionCamera;
 
+    public ComputeShader computeShader;
+
     private void Update()
     {
         if (Input.GetKeyDown(KeyCode.Alpha1))
         {
+            MonsterVisionProcessor.Initialize(computeShader);
+
             List<GameObject> players = new List<GameObject>();
             FindePlayers(players);
             VisionResult result;
@@ -17,6 +21,10 @@ public class TestManager : MonoBehaviour
             if (found)
             {
                 Debug.Log("I see you: " + result.VisibleCount);
+                for (int i = 0; i < result.VisibleCount; ++i)
+                {
+                    Debug.Log(result.VisiblePlayers[i].PlayerObject.name + " : " + result.VisiblePlayers[i].ScreenSpaceRatio);
+                }
             }
             else
             {
