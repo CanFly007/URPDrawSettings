@@ -1,8 +1,5 @@
 ﻿#pragma kernel CSMain
 
-// Define the number of players
-#define NUM_PLAYERS 6
-
 // The render texture that will be analyzed.
 Texture2D<float4> InputTexture;
 

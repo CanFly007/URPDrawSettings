@@ -15,7 +15,7 @@ public struct VisiblePlayer
 
 public static class MonsterVisionProcessor
 {
-    private static readonly int s_ShaderPropertyColor = Shader.PropertyToID("_FindColor");
+    private static readonly int s_ShaderPropertyColor = Shader.PropertyToID("_PlayerColor");
     private static MaterialPropertyBlock s_MaterialPropertyBlock = new MaterialPropertyBlock();
 
     private static ComputeShader s_PlayerDetectionShader;
@@ -30,6 +30,15 @@ public static class MonsterVisionProcessor
         s_UseGPU = useGPU;
     }
 
+    public static void Cleanup()
+    {
+        if (s_PlayerPixelCountsBuffer != null)
+        {
+            s_PlayerPixelCountsBuffer.Release();
+            s_PlayerPixelCountsBuffer = null;
+        }
+    }
+
     private static Color[] s_DetectionColors = new Color[]
     {
         new Color(1, 0, 0, 1),
@@ -39,16 +48,16 @@ public static class MonsterVisionProcessor
         new Color(1, 0, 1, 1),
         new Color(0, 1, 1, 1),
     };
-    private static int NUM_PLAYERS = 2;
 
     public static bool TryDetectPlayers(List<GameObject> players, Camera monsterCamera, out VisionResult visionResult)
     {
+        int maxPlayers = s_DetectionColors.Length;
         if (players.Count > s_DetectionColors.Length)
         {
-            Debug.LogError("Insufficient detection colors for the number of players.");
-            visionResult = new VisionResult();
-            return false;
+            Debug.LogWarning("Insufficient detection colors for the number of players.");
         }
+        int numPlayersToProcess = Mathf.Min(players.Count, maxPlayers);
+        List<GameObject> playersToProcess = players.GetRange(0, numPlayersToProcess);
 
         int rtHeight = 256;
         int rtWidth = Mathf.RoundToInt(rtHeight * monsterCamera.aspect);
@@ -64,12 +73,12 @@ public static class MonsterVisionProcessor
         GL.Clear(true, true, Color.black);
 
         Dictionary<Color, GameObject> colorPlayerMap = new Dictionary<Color, GameObject>();
-        for (int i = 0; i < players.Count; ++i)
+        for (int i = 0; i < numPlayersToProcess; ++i)
         {
             Color detectionColor = s_DetectionColors[i];
-            colorPlayerMap[detectionColor] = players[i];
+            colorPlayerMap[detectionColor] = playersToProcess[i];
 
-            Renderer[] playerRenderers = players[i].GetComponentsInChildren<Renderer>();
+            Renderer[] playerRenderers = playersToProcess[i].GetComponentsInChildren<Renderer>();
             foreach (Renderer renderer in playerRenderers)
             {
                 s_MaterialPropertyBlock.SetColor(s_ShaderPropertyColor, detectionColor);
@@ -82,13 +91,14 @@ public static class MonsterVisionProcessor
 
         visionResult = new VisionResult();
         List<VisiblePlayer> visiblePlayers = new List<VisiblePlayer>();
+        int totalPixels = rtWidth * rtHeight;
 
         if (s_UseGPU)
         {
             s_PlayerDetectionShader.SetTexture(s_KernelID, "InputTexture", renderTexture);
 
-            ComputeBuffer s_PlayerPixelCountsBuffer = new ComputeBuffer(players.Count, sizeof(int));
-            int[] playerPixelCounts = new int[players.Count];
+            ComputeBuffer s_PlayerPixelCountsBuffer = new ComputeBuffer(numPlayersToProcess, sizeof(int));
+            int[] playerPixelCounts = new int[numPlayersToProcess];
             s_PlayerPixelCountsBuffer.SetData(playerPixelCounts);
 
             s_PlayerDetectionShader.SetBuffer(s_KernelID, "PlayerPixelCounts", s_PlayerPixelCountsBuffer);
@@ -99,8 +109,7 @@ public static class MonsterVisionProcessor
             s_PlayerPixelCountsBuffer.GetData(playerPixelCounts);
 
             s_PlayerPixelCountsBuffer.Release();
-
-            int totalPixels = rtWidth * rtHeight;
+            
             for (int i = 0; i < playerPixelCounts.Length; i++)
             {
                 if (playerPixelCounts[i] > 0)
@@ -108,7 +117,7 @@ public static class MonsterVisionProcessor
                     float ratio = playerPixelCounts[i] / (float)totalPixels;
                     if (ratio > 0)
                     {
-                        visiblePlayers.Add(new VisiblePlayer { PlayerObject = players[i], ScreenSpaceRatio = ratio });
+                        visiblePlayers.Add(new VisiblePlayer { PlayerObject = playersToProcess[i], ScreenSpaceRatio = ratio });
                     }
                 }
             }
@@ -136,7 +145,6 @@ public static class MonsterVisionProcessor
             }
         	UnityEngine.Object.Destroy(texture);
 
-        	int totalPixels = rtWidth * rtHeight;
             foreach (var kvp in playerPixelCounts)
             {
             	float ratio = kvp.Value / (float)totalPixels;
