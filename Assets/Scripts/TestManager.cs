@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class TestManager : MonoBehaviour
 {
-    public Camera detectionCamera;
+    public Camera[] detectionCameras;
 
     public ComputeShader computeShader;
 
@@ -19,19 +19,25 @@ public class TestManager : MonoBehaviour
             List<GameObject> players = new List<GameObject>();
             FindePlayers(players);
             VisionResult result;
-            bool found = MonsterVisionProcessor.TryDetectPlayers(players, detectionCamera, out result);
-            if (found)
+
+            for (int i = 0; i < detectionCameras.Length; i++)
             {
-                Debug.Log("I see you: " + result.VisibleCount);
-                for (int i = 0; i < result.VisibleCount; ++i)
+                bool found = MonsterVisionProcessor.TryDetectPlayers(players, detectionCameras[i], out result);
+                Debug.Log(detectionCameras[i].name);
+                if (found)
                 {
-                    Debug.Log(result.VisiblePlayers[i].PlayerObject.name + " : " + result.VisiblePlayers[i].ScreenSpaceRatio);
+                    Debug.Log("I see you: " + result.VisibleCount);
+                    for (int j = 0; j < result.VisibleCount; ++j)
+                    {
+                        Debug.Log(result.VisiblePlayers[j].PlayerObject.name + " : " + result.VisiblePlayers[j].ScreenSpaceRatio);
+                    }
+                }
+                else
+                {
+                    Debug.Log("Can not see you");
                 }
             }
-            else
-            {
-                Debug.Log("Can not see you");
-            }
+
         }
     }
 

@@ -13,7 +13,7 @@ public struct VisiblePlayer
     public float ScreenSpaceRatio;
 }
 
-public static class MonsterVisionProcessor
+public class MonsterVisionProcessor
 {
     private static readonly int s_ShaderPropertyColor = Shader.PropertyToID("_PlayerColor");
     private static MaterialPropertyBlock s_MaterialPropertyBlock = new MaterialPropertyBlock();
@@ -158,7 +158,6 @@ public static class MonsterVisionProcessor
         visionResult.VisiblePlayers = visiblePlayers.ToArray();
         visionResult.VisibleCount = visiblePlayers.Count;
 
-        // Clean up the RenderTexture
         monsterCamera.targetTexture = null;
         RenderTexture.ReleaseTemporary(renderTexture);
         return visionResult.VisibleCount > 0;
