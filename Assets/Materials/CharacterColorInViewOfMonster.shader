@@ -55,6 +55,12 @@
 				{
 					UNITY_SETUP_INSTANCE_ID(i);
 					float4 col = UNITY_ACCESS_INSTANCED_PROP(Props, _PlayerColor);
+					//if (!IsGammaSpace())
+					//{
+					//	col.r = LinearToGammaSpaceExact(col.r);
+					//	col.g = LinearToGammaSpaceExact(col.g);
+					//	col.b = LinearToGammaSpaceExact(col.b);
+					//}
 					return col;
 				}
 			ENDCG
