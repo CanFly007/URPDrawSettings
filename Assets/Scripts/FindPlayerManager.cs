@@ -21,12 +21,13 @@ public static class MonsterVisionProcessor
     private static ComputeShader s_PlayerDetectionShader;
     private static int s_KernelID;
     private static ComputeBuffer s_PlayerPixelCountsBuffer;
-    private static bool s_UseGPU = true; // 切换GPU和CPU处理
+    private static bool s_UseGPU = false;
 
-    public static void Initialize(ComputeShader playerDetectionShader)
+    public static void Initialize(ComputeShader playerDetectionShader, bool useGPU = false)
     {
         s_PlayerDetectionShader = playerDetectionShader;
         s_KernelID = s_PlayerDetectionShader.FindKernel("CSMain");
+        s_UseGPU = useGPU;
     }
 
     private static Color[] s_DetectionColors = new Color[]
@@ -52,6 +53,8 @@ public static class MonsterVisionProcessor
         int rtHeight = 256;
         int rtWidth = Mathf.RoundToInt(rtHeight * monsterCamera.aspect);
         RenderTexture renderTexture = RenderTexture.GetTemporary(rtWidth, rtHeight, 32, RenderTextureFormat.ARGB32);
+        renderTexture.enableRandomWrite = true;
+        renderTexture.Create();
 
         monsterCamera.targetTexture = renderTexture;
         monsterCamera.clearFlags = CameraClearFlags.SolidColor;
@@ -74,99 +77,82 @@ public static class MonsterVisionProcessor
             }
         }
 
+		monsterCamera.targetTexture = renderTexture;
+        monsterCamera.Render();
+
+        visionResult = new VisionResult();
+        List<VisiblePlayer> visiblePlayers = new List<VisiblePlayer>();
 
         if (s_UseGPU)
         {
-            renderTexture.enableRandomWrite = true;
-            renderTexture.Create();
-
-            monsterCamera.targetTexture = renderTexture;
-            monsterCamera.Render();
-
             s_PlayerDetectionShader.SetTexture(s_KernelID, "InputTexture", renderTexture);
 
-            // 创建计数器缓冲区
-            s_PlayerPixelCountsBuffer = new ComputeBuffer(NUM_PLAYERS, sizeof(int));
-            int[] playerPixelCounts2 = new int[NUM_PLAYERS];
-            s_PlayerPixelCountsBuffer.SetData(playerPixelCounts2); // 初始化为0
+            ComputeBuffer s_PlayerPixelCountsBuffer = new ComputeBuffer(players.Count, sizeof(int));
+            int[] playerPixelCounts = new int[players.Count];
+            s_PlayerPixelCountsBuffer.SetData(playerPixelCounts);
 
             s_PlayerDetectionShader.SetBuffer(s_KernelID, "PlayerPixelCounts", s_PlayerPixelCountsBuffer);
-
-            // 分派Compute Shader
             int threadGroupsX = Mathf.CeilToInt(rtWidth / 8.0f);
             int threadGroupsY = Mathf.CeilToInt(rtHeight / 8.0f);
             s_PlayerDetectionShader.Dispatch(s_KernelID, threadGroupsX, threadGroupsY, 1);
 
-            s_PlayerPixelCountsBuffer.GetData(playerPixelCounts2);
+            s_PlayerPixelCountsBuffer.GetData(playerPixelCounts);
 
             s_PlayerPixelCountsBuffer.Release();
-            RenderTexture.ReleaseTemporary(renderTexture);
 
-            // 处理检测结果
-            List<VisiblePlayer> visiblePlayers2 = new List<VisiblePlayer>();
-            for (int i = 0; i < playerPixelCounts2.Length; i++)
+            int totalPixels = rtWidth * rtHeight;
+            for (int i = 0; i < playerPixelCounts.Length; i++)
             {
-                if (playerPixelCounts2[i] > 0)
+                if (playerPixelCounts[i] > 0)
                 {
-                    float ratio = playerPixelCounts2[i] / (float)(rtWidth * rtHeight);
+                    float ratio = playerPixelCounts[i] / (float)totalPixels;
                     if (ratio > 0)
                     {
-                        visiblePlayers2.Add(new VisiblePlayer { PlayerObject = players[i], ScreenSpaceRatio = ratio });
+                        visiblePlayers.Add(new VisiblePlayer { PlayerObject = players[i], ScreenSpaceRatio = ratio });
                     }
                 }
             }
-
-            // 构建最终结果
-            visionResult.VisiblePlayers = visiblePlayers2.ToArray();
-            visionResult.VisibleCount = visiblePlayers2.Count;
-
-            return visionResult.VisibleCount > 0;
         }
-
-
-
-
-
-        monsterCamera.Render();
-
-        RenderTexture.active = renderTexture;
-        Texture2D texture = new Texture2D(rtWidth, rtHeight, TextureFormat.RGBA32, false);
-        texture.ReadPixels(new Rect(0, 0, rtWidth, rtHeight), 0, 0);
-        texture.Apply();
-
-        var playerPixelCounts = new Dictionary<GameObject, int>();
-        Color[] pixels = texture.GetPixels();
-        foreach (Color pixel in pixels)
+        else
         {
-            if (colorPlayerMap.ContainsKey(pixel))
+        	RenderTexture.active = renderTexture;
+            Texture2D texture = new Texture2D(rtWidth, rtHeight, TextureFormat.RGBA32, false);
+            texture.ReadPixels(new Rect(0, 0, rtWidth, rtHeight), 0, 0);
+            texture.Apply();
+
+        	var playerPixelCounts = new Dictionary<GameObject, int>();
+            Color[] pixels = texture.GetPixels();
+            foreach (Color pixel in pixels)
             {
-                if (!playerPixelCounts.ContainsKey(colorPlayerMap[pixel]))
+                if (colorPlayerMap.ContainsKey(pixel))
                 {
-                    playerPixelCounts[colorPlayerMap[pixel]] = 0;
+                    if (!playerPixelCounts.ContainsKey(colorPlayerMap[pixel]))
+                    {
+                        playerPixelCounts[colorPlayerMap[pixel]] = 0;
+                    }
+                    playerPixelCounts[colorPlayerMap[pixel]]++;
                 }
-                playerPixelCounts[colorPlayerMap[pixel]]++;
+
             }
-        }
+        	UnityEngine.Object.Destroy(texture);
 
-        UnityEngine.Object.Destroy(texture);
-        RenderTexture.ReleaseTemporary(renderTexture);
-        monsterCamera.targetTexture = null;
-
-        var visiblePlayers = new List<VisiblePlayer>();
-        int totalPixels = rtWidth * rtHeight;
-        foreach (var kvp in playerPixelCounts)
-        {
-            float ratio = kvp.Value / (float)totalPixels;
-            if (ratio > 0)
+        	int totalPixels = rtWidth * rtHeight;
+            foreach (var kvp in playerPixelCounts)
             {
-                visiblePlayers.Add(new VisiblePlayer { PlayerObject = kvp.Key, ScreenSpaceRatio = ratio });
+            	float ratio = kvp.Value / (float)totalPixels;
+                if (ratio > 0)
+                {
+                    visiblePlayers.Add(new VisiblePlayer { PlayerObject = kvp.Key, ScreenSpaceRatio = ratio });
+                }
             }
         }
-
+   
         visionResult.VisiblePlayers = visiblePlayers.ToArray();
         visionResult.VisibleCount = visiblePlayers.Count;
 
-
+        // Clean up the RenderTexture
+        monsterCamera.targetTexture = null;
+        RenderTexture.ReleaseTemporary(renderTexture);
         return visionResult.VisibleCount > 0;
     }
 }

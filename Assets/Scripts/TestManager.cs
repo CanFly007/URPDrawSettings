@@ -8,11 +8,13 @@ public class TestManager : MonoBehaviour
 
     public ComputeShader computeShader;
 
+    public bool useGPU;
+
     private void Update()
     {
         if (Input.GetKeyDown(KeyCode.Alpha1))
         {
-            MonsterVisionProcessor.Initialize(computeShader);
+            MonsterVisionProcessor.Initialize(computeShader, useGPU);
 
             List<GameObject> players = new List<GameObject>();
             FindePlayers(players);
