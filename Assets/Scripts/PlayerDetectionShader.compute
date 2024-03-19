@@ -4,6 +4,11 @@ Texture2D<float4> InputTexture;
 
 RWStructuredBuffer<int> PlayerPixelCounts;
 
+int4 RoundToInt(float4 val)
+{
+    return int4(round(val.rgb * 255.0), round(val.a * 255.0));
+}
+
 [numthreads(8, 8, 1)]
 void CSMain(uint3 id : SV_DispatchThreadID)
 {
@@ -11,18 +16,51 @@ void CSMain(uint3 id : SV_DispatchThreadID)
 
     float4 pixelColor = InputTexture.Load(int3(texCoord, 0));
 
-    int playerIndex = -1;
-    bool isRed = pixelColor.r == 1 && pixelColor.g == 0 && pixelColor.b == 0;
-    bool isGreen = pixelColor.r == 0 && pixelColor.g == 1 && pixelColor.b == 0;
-    bool isBlue = pixelColor.r == 0 && pixelColor.g == 0 && pixelColor.b == 1;
-    bool isYellow = pixelColor.r == 1 && pixelColor.g == 1 && pixelColor.b == 0;
-    bool isMagenta = pixelColor.r == 1 && pixelColor.g == 0 && pixelColor.b == 1;
-    bool isCyan = pixelColor.r == 0 && pixelColor.g == 1 && pixelColor.b == 1;
+    int4 intColor = int4(round(pixelColor.rgb * 255.0), round(pixelColor.a * 255.0));
+    int packedColor = (intColor.r << 16) | (intColor.g << 8) | intColor.b;
+    switch (packedColor)
+    {
+        case 0xFF0000: InterlockedAdd(PlayerPixelCounts[0], 1); break; // Red
+        case 0x00FF00: InterlockedAdd(PlayerPixelCounts[1], 1); break; // Green
+        case 0x0000FF: InterlockedAdd(PlayerPixelCounts[2], 1); break; // Blue
+        case 0xFFFF00: InterlockedAdd(PlayerPixelCounts[3], 1); break; // Yellow
+        case 0xFF00FF: InterlockedAdd(PlayerPixelCounts[4], 1); break; // Magenta
+        case 0x00FFFF: InterlockedAdd(PlayerPixelCounts[5], 1); break; // Cyan
+        case 0x800000: InterlockedAdd(PlayerPixelCounts[6], 1); break; // Color6 (Dark Red)
+        case 0x008000: InterlockedAdd(PlayerPixelCounts[7], 1); break; // Color7 (Dark Green)
+        case 0x000080: InterlockedAdd(PlayerPixelCounts[8], 1); break; // Color8 (Dark Blue)
+        case 0x808000: InterlockedAdd(PlayerPixelCounts[9], 1); break; // Color9 (Olive)
+        case 0x800080: InterlockedAdd(PlayerPixelCounts[10], 1); break; // Color10 (Purple)
+        case 0x008080: InterlockedAdd(PlayerPixelCounts[11], 1); break; // Color11 (Teal)
+    }
 
-    if (isRed) InterlockedAdd(PlayerPixelCounts[0], 1);
-    else if (isGreen) InterlockedAdd(PlayerPixelCounts[1], 1);
-    else if (isBlue) InterlockedAdd(PlayerPixelCounts[2], 1);
-    else if (isYellow) InterlockedAdd(PlayerPixelCounts[3], 1);
-    else if (isMagenta) InterlockedAdd(PlayerPixelCounts[4], 1);
-    else if (isCyan) InterlockedAdd(PlayerPixelCounts[5], 1);
+
+    //Old Style 128 value
+    //int4 intColor = RoundToInt(pixelColor);
+
+    //bool isRed = intColor.r == 255 && intColor.g == 0 && intColor.b == 0;
+    //bool isGreen = intColor.r == 0 && intColor.g == 255 && intColor.b == 0;
+    //bool isBlue = intColor.r == 0 && intColor.g == 0 && intColor.b == 255;
+    //bool isYellow = intColor.r == 255 && intColor.g == 255 && intColor.b == 0;
+    //bool isMagenta = intColor.r == 255 && intColor.g == 0 && intColor.b == 255;
+    //bool isCyan = intColor.r == 0 && intColor.g == 255 && intColor.b == 255;
+    //bool isColor6 = intColor.r == 128 && intColor.g == 0 && intColor.b == 0;
+    //bool isColor7 = intColor.r == 0 && intColor.g == 128 && intColor.b == 0;
+    //bool isColor8 = intColor.r == 0 && intColor.g == 0 && intColor.b == 128;
+    //bool isColor9 = intColor.r == 128 && intColor.g == 128 && intColor.b == 0;
+    //bool isColor10 = intColor.r == 128 && intColor.g == 0 && intColor.b == 128;
+    //bool isColor11 = intColor.r == 0 && intColor.g == 128 && intColor.b == 128;
+
+    //if (isRed) InterlockedAdd(PlayerPixelCounts[0], 1);
+    //else if (isGreen) InterlockedAdd(PlayerPixelCounts[1], 1);
+    //else if (isBlue) InterlockedAdd(PlayerPixelCounts[2], 1);
+    //else if (isYellow) InterlockedAdd(PlayerPixelCounts[3], 1);
+    //else if (isMagenta) InterlockedAdd(PlayerPixelCounts[4], 1);
+    //else if (isCyan) InterlockedAdd(PlayerPixelCounts[5], 1);
+    //else if (isColor6) InterlockedAdd(PlayerPixelCounts[6], 1);
+    //else if (isColor7) InterlockedAdd(PlayerPixelCounts[7], 1);
+    //else if (isColor8) InterlockedAdd(PlayerPixelCounts[8], 1);
+    //else if (isColor9) InterlockedAdd(PlayerPixelCounts[9], 1);
+    //else if (isColor10) InterlockedAdd(PlayerPixelCounts[10], 1);
+    //else if (isColor11) InterlockedAdd(PlayerPixelCounts[11], 1);
 }

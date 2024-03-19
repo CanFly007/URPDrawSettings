@@ -41,20 +41,20 @@ namespace YahahaGraphics
             }
         }
 
-        private static Color[] s_DetectionColors = new Color[]
+        private static Color32[] s_DetectionColors = new Color32[]
         {
-            new Color(1, 0, 0, 1),
-            new Color(0, 1, 0, 1),
-            new Color(0, 0, 1, 1),
-            new Color(1, 1, 0, 1),
-            new Color(1, 0, 1, 1),
-            new Color(0, 1, 1, 1),
-            new Color(0.5f, 0, 0, 1),
-            new Color(0, 0.5f, 0, 1),
-            new Color(0, 0, 0.5f, 1),
-            new Color(0.5f, 0.5f, 0, 1),
-            new Color(0.5f, 0, 0.5f, 1),
-            new Color(0, 0.5f, 0.5f, 1),
+            new Color32(255, 0, 0, 255),
+            new Color32(0, 255, 0, 255),
+            new Color32(0, 0, 255, 255),
+            new Color32(255, 255, 0, 255),
+            new Color32(255, 0, 255, 255),
+            new Color32(0, 255, 255, 255),
+            new Color32(128, 0, 0, 255),
+            new Color32(0, 128, 0, 255),
+            new Color32(0, 0, 128, 255),
+            new Color32(128, 128, 0, 255),
+            new Color32(128, 0, 128, 255),
+            new Color32(0, 128, 128, 255),
         };
 
         public static bool TryDetectPlayers(List<GameObject> players, Camera monsterCamera, out VisionResult visionResult)
@@ -69,7 +69,7 @@ namespace YahahaGraphics
 
             int rtHeight = 256;
             int rtWidth = Mathf.RoundToInt(rtHeight * monsterCamera.aspect);
-            RenderTexture renderTexture = RenderTexture.GetTemporary(rtWidth, rtHeight, 32, RenderTextureFormat.ARGB32);
+            RenderTexture renderTexture = RenderTexture.GetTemporary(rtWidth, rtHeight, 32, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
             renderTexture.enableRandomWrite = true;
             renderTexture.Create();
 
@@ -80,10 +80,10 @@ namespace YahahaGraphics
             Graphics.SetRenderTarget(renderTexture);
             GL.Clear(true, true, Color.black);
 
-            var colorPlayerMap = new Dictionary<Color, GameObject>();
+            var colorPlayerMap = new Dictionary<Color32, GameObject>();
             for (int i = 0; i < numPlayersToProcess; ++i)
             {
-                Color detectionColor = s_DetectionColors[i];
+                Color32 detectionColor = s_DetectionColors[i];
                 colorPlayerMap[detectionColor] = playersToProcess[i];
 
                 Renderer[] playerRenderers = playersToProcess[i].GetComponentsInChildren<Renderer>();
@@ -139,8 +139,9 @@ namespace YahahaGraphics
 
                 var playerPixelCounts = new Dictionary<GameObject, int>();
                 Color[] pixels = texture.GetPixels();
-                foreach (Color pixel in pixels)
+                for (int i = 0; i < pixels.Length; ++i)
                 {
+                    Color32 pixel = pixels[i];
                     if (colorPlayerMap.ContainsKey(pixel))
                     {
                         if (!playerPixelCounts.ContainsKey(colorPlayerMap[pixel]))
